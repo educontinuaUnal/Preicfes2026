@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cronograma de Estudio 2026</title>
+    <!-- Tailwind CSS para el diseño -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome para los iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        select { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-right: 2.5rem; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen pb-12">
+
+    <!-- Encabezado con degradado -->
+    <header class="bg-gradient-to-r from-indigo-600 to-blue-600 text-white py-16 px-4 shadow-lg">
+        <div class="max-w-6xl mx-auto text-center">
+            <h1 class="text-4xl md:text-5xl font-extrabold mb-4 tracking-tight">Cronograma de Estudio</h1>
+            <p class="text-xl md:text-2xl text-blue-100 max-w-2xl mx-auto font-semibold tracking-wide">Preicfes Saber 11 de la UNAL</p>
+        </div>
+    </header>
+
+    <!-- Sección de Filtros -->
+    <div class="max-w-6xl mx-auto px-4 -mt-8 relative z-10">
+        <div class="bg-white rounded-xl shadow-lg p-6 flex flex-col md:flex-row gap-6 items-center justify-between border border-slate-100">
+            <div class="flex-1 w-full relative">
+                <label class="block text-sm font-semibold text-slate-600 mb-2" for="monthFilter">
+                    <i class="far fa-calendar-alt mr-1"></i> Filtrar por Mes
+                </label>
+                <select id="monthFilter" class="w-full border border-slate-300 rounded-lg px-4 py-3 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-slate-50 transition-colors cursor-pointer">
+                    <option value="all">🗓️ Todos los meses</option>
+                    <!-- Las opciones se inyectan por JS -->
+                </select>
+            </div>
+            
+            <div class="flex-1 w-full relative">
+                <label class="block text-sm font-semibold text-slate-600 mb-2" for="areaFilter">
+                    <i class="fas fa-layer-group mr-1"></i> Filtrar por Área
+                </label>
+                <select id="areaFilter" class="w-full border border-slate-300 rounded-lg px-4 py-3 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-slate-50 transition-colors cursor-pointer">
+                    <option value="all">📚 Todas las áreas</option>
+                    <!-- Las opciones se inyectan por JS -->
+                </select>
+            </div>
+            
+            <div class="w-full md:w-auto mt-2 md:mt-0 pt-6 text-center md:text-right">
+                <span class="inline-block bg-indigo-50 text-indigo-700 font-medium px-4 py-2 rounded-full text-sm shadow-sm" id="resultsCount">
+                    Cargando clases...
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenedor Principal del Cronograma -->
+    <main class="max-w-6xl mx-auto px-4 mt-12">
+        <div id="schedule-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Las tarjetas se generan dinámicamente aquí -->
+        </div>
+
+        <!-- Estado de "Sin Resultados" -->
+        <div id="no-results" class="hidden flex flex-col items-center justify-center py-20">
+            <div class="bg-slate-100 p-6 rounded-full mb-4">
+                <i class="fas fa-search text-4xl text-slate-400"></i>
+            </div>
+            <h3 class="text-2xl font-semibold text-slate-700">No se encontraron sesiones</h3>
+            <p class="text-slate-500 mt-2 text-center max-w-md">Intenta ajustar los filtros de búsqueda o seleccionar un mes y área diferentes.</p>
+            <button onclick="resetFilters()" class="mt-6 text-indigo-600 font-medium hover:text-indigo-800 transition-colors">
+                Limpiar filtros
+            </button>
+        </div>
+    </main>
+
+    <script>
+        // =========================================================================
+        
+        // =========================================================================
+        const csvData = `Fecha;Día;Horario;Área;Tema / Evento
+23-feb;Lunes;5:00 p.m. a 7:00 p.m.;Biología;Método Científico y Célula
+24-feb;Martes;5:00 p.m. a 7:00 p.m.;Biología;Procesos Celulares (Respiración, Fotosíntesis)
+25-feb;Miércoles;5:00 p.m. a 7:00 p.m.;Biología;Genética I (Leyes de Mendel)
+26-feb;Jueves;5:00 p.m. a 7:00 p.m.;Biología;Genética II (ADN y ARN)
+28-feb;Sábado;8:00 a.m. a 10:00 a.m.;Biología;Organismos y Clasificación
+2-mar;Lunes;5:00 p.m. a 7:00 p.m.;Sociales;Historia y Geografía base
+3-mar;Martes;5:00 p.m. a 7:00 p.m.;Sociales;Geografía Económica
+4-mar;Miércoles;5:00 p.m. a 7:00 p.m.;Sociales;Historia Universal y Latinoamericana
+5-mar;Jueves;5:00 p.m. a 7:00 p.m.;Sociales;Constitución Política de 1991
+7-mar;Sábado;8:00 a.m. a 10:00 a.m.;SIMULACRO;📌 PRIMER SIMULACRO (DIAGNÓSTICO)
+9-mar;Lunes;5:00 p.m. a 7:00 p.m.;Biología;Sistemas del Cuerpo Humano I
+10-mar;Martes;5:00 p.m. a 7:00 p.m.;Biología;Sistemas del Cuerpo Humano II
+11-mar;Miércoles;5:00 p.m. a 7:00 p.m.;Biología;Ecosistemas y Poblaciones
+12-mar;Jueves;5:00 p.m. a 7:00 p.m.;Biología;Flujo de Energía en ecosistemas
+14-mar;Sábado;8:00 a.m. a 10:00 a.m.;Biología;Evolución y origen de la vida
+16-mar;Lunes;5:00 p.m. a 7:00 p.m.;Sociales;Derechos y Deberes Fundamentales
+17-mar;Martes;5:00 p.m. a 7:00 p.m.;Sociales;Mecanismos de Participación
+18-mar;Miércoles;5:00 p.m. a 7:00 p.m.;Sociales;Competencias Ciudadanas I
+19-mar;Jueves;5:00 p.m. a 7:00 p.m.;Sociales;Análisis de Perspectivas
+21-mar;Sábado;8:00 a.m. a 10:00 a.m.;Lectura Crítica;Comprensión a nivel local
+23-mar;Lunes;5:00 p.m. a 7:00 p.m.;FESTIVO;Día de San José - No hay clase
+24-mar;Martes;5:00 p.m. a 7:00 p.m.;Lectura Crítica;Comprensión a nivel global
+25-mar;Miércoles;5:00 p.m. a 7:00 p.m.;Lectura Crítica;Intención comunicativa
+26-mar;Jueves;5:00 p.m. a 7:00 p.m.;Lectura Crítica;Tipologías Textuales
+28-mar;Sábado;8:00 a.m. a 10:00 a.m.;Lectura Crítica;Textos Discontinuos (Infografías)
+6-abr;Lunes;5:00 p.m. a 7:00 p.m.;Lectura Crítica;Argumentación y premisas
+7-abr;Martes;5:00 p.m. a 7:00 p.m.;Lectura Crítica;Validez de argumentos
+8-abr;Miércoles;5:00 p.m. a 7:00 p.m.;Lectura Crítica;Estrategias discursivas
+9-abr;Jueves;5:00 p.m. a 7:00 p.m.;Lectura Crítica;Lectura filosófica
+11-abr;Sábado;8:00 a.m. a 10:00 a.m.;Lectura Crítica;Intertextualidad
+13-abr;Lunes;5:00 p.m. a 7:00 p.m.;Lectura Crítica;Evaluación de contenidos
+14-abr;Martes;5:00 p.m. a 7:00 p.m.;Lectura Crítica;Ensayo y Columna de opinión
+15-abr;Miércoles;5:00 p.m. a 7:00 p.m.;Lectura Crítica;Taller Intensivo de lectura
+16-abr;Jueves;5:00 p.m. a 7:00 p.m.;Lectura Crítica;Cierre de Módulo
+18-abr;Sábado;8:00 a.m. a 10:00 a.m.;Lectura Crítica;Taller final de repaso
+20-abr;Lunes;5:00 p.m. a 7:00 p.m.;Matemáticas;Álgebra básica y expresiones
+21-abr;Martes;5:00 p.m. a 7:00 p.m.;Matemáticas;Funciones y relaciones
+22-abr;Miércoles;5:00 p.m. a 7:00 p.m.;Matemáticas;Función Lineal y Cuadrática
+23-abr;Jueves;5:00 p.m. a 7:00 p.m.;Matemáticas;Exponenciales y Logaritmos
+25-abr;Sábado;8:00 a.m. a 10:00 a.m.;Matemáticas;Geometría Plana (Áreas y Perímetros)
+27-abr;Lunes;5:00 p.m. a 7:00 p.m.;Matemáticas;Sólidos y Volúmenes
+28-abr;Martes;5:00 p.m. a 7:00 p.m.;Matemáticas;Teorema de Pitágoras
+29-abr;Miércoles;5:00 p.m. a 7:00 p.m.;Matemáticas;Razones Trigonométricas
+30-abr;Jueves;5:00 p.m. a 7:00 p.m.;Matemáticas;Estadística Descriptiva
+1-may;Viernes;5:00 p.m. a 7:00 p.m.;FESTIVO;Día del Trabajo
+2-may;Sábado;8:00 a.m. a 10:00 a.m.;Matemáticas;Probabilidad y azar
+4-may;Lunes;5:00 p.m. a 7:00 p.m.;Matemáticas;Conteo y Combinatoria
+5-may;Martes;5:00 p.m. a 7:00 p.m.;🗣️ CHARLA 1;El Mapa del Éxito (Estructura ICFES)
+6-may;Miércoles;5:00 p.m. a 7:00 p.m.;Matemáticas;Interpretación de Gráficas
+7-may;Jueves;5:00 p.m. a 7:00 p.m.;Matemáticas;Cierre de Módulo
+9-may;Sábado;8:00 a.m. a 10:00 a.m.;SIMULACRO;📌 SEGUNDO SIMULACRO (INTERMEDIO)
+11-may;Lunes;5:00 p.m. a 7:00 p.m.;Matemáticas;Taller Práctico Final
+12-may;Martes;5:00 p.m. a 7:00 p.m.;🗣️ CHARLA 2;Mente de Acero (Ansiedad y Estrés)
+13-may;Miércoles;5:00 p.m. a 7:00 p.m.;Sociales;Globalización y Economía
+14-may;Jueves;5:00 p.m. a 7:00 p.m.;Sociales;Problemáticas Sociales
+16-may;Sábado;8:00 a.m. a 10:00 a.m.;Sociales;Violencia y Sociedad en Colombia
+18-may;Lunes;5:00 p.m. a 7:00 p.m.;FESTIVO;Día de la Ascensión
+19-may;Martes;5:00 p.m. a 7:00 p.m.;🗣️ CHARLA 3;Foco de Atleta (Concentración)
+20-may;Miércoles;5:00 p.m. a 7:00 p.m.;Sociales;Competencias Ciudadanas II
+21-may;Jueves;5:00 p.m. a 7:00 p.m.;Sociales;Cierre de Módulo
+23-may;Sábado;8:00 a.m. a 10:00 a.m.;Biología;CTS (Ciencia, Tec, Sociedad)
+25-may;Lunes;5:00 p.m. a 7:00 p.m.;FESTIVO;Corpus Christi
+26-may;Martes;5:00 p.m. a 7:00 p.m.;🗣️ CHARLA 4;El Arte de la Duda (Estrategia)
+27-may;Miércoles;5:00 p.m. a 7:00 p.m.;Biología;CTS (Ciencia, Tec, Sociedad)
+28-may;Jueves;5:00 p.m. a 7:00 p.m.;Biología;CTS (Ciencia, Tec, Sociedad)
+30-may;Sábado;8:00 a.m. a 10:00 a.m.;Química;Estructura de la Materia
+1-jun;Lunes;5:00 p.m. a 7:00 p.m.;Química;Tabla Periódica
+2-jun;Martes;5:00 p.m. a 7:00 p.m.;Química;Enlaces Químicos
+3-jun;Miércoles;5:00 p.m. a 7:00 p.m.;Química;Nomenclatura Inorgánica
+4-jun;Jueves;5:00 p.m. a 7:00 p.m.;Química;Reacciones Químicas
+6-jun;Sábado;8:00 a.m. a 10:00 a.m.;Química;Estequiometría
+8-jun;Lunes;5:00 p.m. a 7:00 p.m.;FESTIVO;Sagrado Corazón
+9-jun;Martes;5:00 p.m. a 7:00 p.m.;Química;Gases ideales
+10-jun;Miércoles;5:00 p.m. a 7:00 p.m.;Química;Soluciones y Mezclas
+11-jun;Jueves;5:00 p.m. a 7:00 p.m.;Química;Química Orgánica y Cierre
+13-jun;Sábado;8:00 a.m. a 10:00 a.m.;Física;Cinemática (MRU, MRUA)
+15-jun;Lunes;5:00 p.m. a 7:00 p.m.;FESTIVO;Día no laboral
+16-jun;Martes;5:00 p.m. a 7:00 p.m.;Física;Dinámica (Leyes de Newton)
+17-jun;Miércoles;5:00 p.m. a 7:00 p.m.;Física;Energía Mecánica
+18-jun;Jueves;5:00 p.m. a 7:00 p.m.;Física;Ondas y Sonido
+20-jun;Sábado;8:00 a.m. a 10:00 a.m.;Física;Termodinámica
+22-jun;Lunes;5:00 p.m. a 7:00 p.m.;Física;Electromagnetismo I
+23-jun;Martes;5:00 p.m. a 7:00 p.m.;Física;Electromagnetismo II
+24-jun;Miércoles;5:00 p.m. a 7:00 p.m.;Física;Circuitos Eléctricos
+25-jun;Jueves;5:00 p.m. a 7:00 p.m.;Física;Cierre de Módulo
+27-jun;Sábado;8:00 a.m. a 10:00 a.m.;Inglés;Vocabulario y Sinónimos
+29-jun;Lunes;5:00 p.m. a 7:00 p.m.;FESTIVO;San Pedro y San Pablo
+30-jun;Martes;5:00 p.m. a 7:00 p.m.;Inglés;Gramática Básica
+1-jul;Miércoles;5:00 p.m. a 7:00 p.m.;Inglés;Intención Comunicativa
+2-jul;Jueves;5:00 p.m. a 7:00 p.m.;Inglés;Propósito del Texto
+4-jul;Sábado;8:00 a.m. a 10:00 a.m.;Inglés;Contextos de Conversación
+6-jul;Lunes;5:00 p.m. a 7:00 p.m.;Inglés;Completar Conversaciones
+7-jul;Martes;5:00 p.m. a 7:00 p.m.;🗣️ CHARLA 5;Estrategia Final: Gestión del Tiempo
+8-jul;Miércoles;5:00 p.m. a 7:00 p.m.;Inglés;Interpretación de Avisos
+9-jul;Jueves;5:00 p.m. a 7:00 p.m.;Inglés;Lectura de Artículos
+11-jul;Sábado;8:00 a.m. a 10:00 a.m.;SIMULACRO;📌 TERCER SIMULACRO (FINAL)
+13-jul;Lunes;5:00 p.m. a 7:00 p.m.;Inglés;Idea General del Texto
+14-jul;Martes;5:00 p.m. a 7:00 p.m.;🗣️ CHARLA 6;Día Cero: Preparación Mental Final
+15-jul;Miércoles;5:00 p.m. a 7:00 p.m.;Inglés;Información Específica
+16-jul;Jueves;5:00 p.m. a 7:00 p.m.;Inglés;Práctica Parte 4 y 5
+18-jul;Sábado;8:00 a.m. a 10:00 a.m.;Inglés;Práctica Parte 6 y 7
+20-jul;Lunes;5:00 p.m. a 7:00 p.m.;FESTIVO;Día de la Independencia
+21-jul;Martes;5:00 p.m. a 7:00 p.m.;Inglés;Taller Final Tipo Examen
+22-jul;Miércoles;5:00 p.m. a 7:00 p.m.;Inglés;Cierre de Módulo
+23-jul;Jueves;5:00 p.m. a 7:00 p.m.;EVENTO;🎉 CLAUSURA DEL CURSO`;
+
+        // 1. Función para procesar el CSV con separador de Punto y Coma (;)
+        function parseCSV(str) {
+            const arr = [];
+            let quote = false;
+            let row = 0, col = 0;
+            for (let c = 0; c < str.length; c++) {
+                let cc = str[c], nc = str[c+1];
+                arr[row] = arr[row] || [];
+                arr[row][col] = arr[row][col] || '';
+                if (cc == '"' && quote && nc == '"') { arr[row][col] += cc; ++c; continue; }
+                if (cc == '"') { quote = !quote; continue; }
+                if (cc == ';' && !quote) { ++col; continue; } // Separador ajustado a ;
+                if (cc == '\r' && nc == '\n' && !quote) { ++row; col = 0; ++c; continue; }
+                if (cc == '\n' && !quote) { ++row; col = 0; continue; }
+                if (cc == '\r' && !quote) { ++row; col = 0; continue; }
+                arr[row][col] += cc;
+            }
+            return arr;
+        }
+
+        // 2. Utilidades de Fecha (Adaptado para formato 23-feb)
+        const monthsNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+        
+        function standardizeDate(dateStr) {
+            const parts = dateStr.toLowerCase().split('-');
+            if(parts.length === 2) {
+                const day = parts[0].padStart(2, '0');
+                const monthMap = { 'ene': '01', 'feb': '02', 'mar': '03', 'abr': '04', 'may': '05', 'jun': '06', 'jul': '07', 'ago': '08', 'sep': '09', 'oct': '10', 'nov': '11', 'dic': '12' };
+                const month = monthMap[parts[1]] || '01';
+                return `2026-${month}-${day}`; // Asumimos año 2026
+            }
+            return dateStr;
+        }
+
+        function getMonthName(standardDate) {
+            const parts = standardDate.split('-');
+            if(parts.length < 2) return '';
+            return monthsNames[parseInt(parts[1], 10) - 1];
+        }
+
+        function formatDateNice(standardDate) {
+            const parts = standardDate.split('-');
+            if(parts.length !== 3) return standardDate;
+            return `${parseInt(parts[2], 10)} de ${getMonthName(standardDate)}`;
+        }
+
+        // 3. Estilos e Iconos dinámicos por Área
+        function getStyleForArea(area) {
+            const areaLower = area.toLowerCase();
+            if (areaLower.includes('biología')) return { color: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: 'fas fa-leaf text-emerald-500' };
+            if (areaLower.includes('sociales')) return { color: 'bg-amber-50 text-amber-700 border-amber-200', icon: 'fas fa-globe-americas text-amber-500' };
+            if (areaLower.includes('física')) return { color: 'bg-purple-50 text-purple-700 border-purple-200', icon: 'fas fa-atom text-purple-500' };
+            if (areaLower.includes('inglés')) return { color: 'bg-blue-50 text-blue-700 border-blue-200', icon: 'fas fa-language text-blue-500' };
+            if (areaLower.includes('matemática')) return { color: 'bg-red-50 text-red-700 border-red-200', icon: 'fas fa-calculator text-red-500' };
+            if (areaLower.includes('química')) return { color: 'bg-teal-50 text-teal-700 border-teal-200', icon: 'fas fa-flask text-teal-500' };
+            if (areaLower.includes('lectura')) return { color: 'bg-indigo-50 text-indigo-700 border-indigo-200', icon: 'fas fa-book-open text-indigo-500' };
+            if (areaLower.includes('festivo')) return { color: 'bg-slate-100 text-slate-600 border-slate-300', icon: 'fas fa-calendar-times text-slate-400' };
+            if (areaLower.includes('charla')) return { color: 'bg-pink-50 text-pink-700 border-pink-200', icon: 'fas fa-comments text-pink-500' };
+            if (areaLower.includes('simulacro')) return { color: 'bg-orange-50 text-orange-700 border-orange-200', icon: 'fas fa-file-signature text-orange-500' };
+            if (areaLower.includes('evento')) return { color: 'bg-yellow-50 text-yellow-700 border-yellow-200', icon: 'fas fa-glass-cheers text-yellow-500' };
+
+            return { color: 'bg-slate-50 text-slate-700 border-slate-200', icon: 'fas fa-book text-slate-400' };
+        }
+
+        // 4. Variables Globales y Carga de Datos
+        let scheduleData = [];
+        const grid = document.getElementById('schedule-grid');
+        const noResults = document.getElementById('no-results');
+        const monthFilter = document.getElementById('monthFilter');
+        const areaFilter = document.getElementById('areaFilter');
+        const resultsCount = document.getElementById('resultsCount');
+
+        function loadDataAndInit() {
+            try {
+                // Procesar la variable csvData
+                const raw = parseCSV(csvData.trim());
+                
+                scheduleData = raw.slice(1) // Ignorar encabezado
+                    .filter(row => row.length >= 5 && row[0] && row[0].trim() !== '') // Evitar filas vacías
+                    .map(row => {
+                        const originalDate = row[0].trim();
+                        const standardDate = standardizeDate(originalDate);
+                        return {
+                            fecha_original: originalDate,
+                            fecha_estandar: standardDate,
+                            mes: getMonthName(standardDate),
+                            dia: row[1].trim(),
+                            horario: row[2].trim(),
+                            area: row[3].trim(),
+                            tema: row[4].trim()
+                        };
+                    });
+
+                // Ordenar cronológicamente usando la fecha estándar (YYYY-MM-DD)
+                scheduleData.sort((a, b) => a.fecha_estandar.localeCompare(b.fecha_estandar));
+
+                // Identificar la clase de "Hoy" y la "Próxima"
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const todayStr = `${year}-${month}-${day}`;
+                
+                let foundNext = false;
+                scheduleData.forEach(item => {
+                    if (item.fecha_estandar === todayStr) {
+                        item.esHoy = true;
+                    } else if (item.fecha_estandar > todayStr && !foundNext) {
+                        item.esProxima = true;
+                        foundNext = true;
+                    }
+                });
+
+                initFilters();
+            } catch (e) {
+                console.error("Error al cargar los datos", e);
+                grid.innerHTML = `<div class="col-span-full text-center py-10 text-red-500 bg-red-50 rounded-xl border border-red-200"><i class="fas fa-exclamation-triangle text-3xl mb-4"></i><br><span class="font-semibold">Error procesando los datos. Asegúrate de pegarlos correctamente.</span></div>`;
+            }
+        }
+
+        // 5. Inicializar Filtros
+        function initFilters() {
+            const uniqueMonths = [...new Set(scheduleData.map(item => item.mes))].filter(Boolean);
+            const uniqueAreas = [...new Set(scheduleData.map(item => item.area))].filter(Boolean);
+
+            monthFilter.innerHTML = '<option value="all">🗓️ Todos los meses</option>';
+            areaFilter.innerHTML = '<option value="all">📚 Todas las áreas</option>';
+
+            uniqueMonths.forEach(mes => {
+                const option = document.createElement('option');
+                option.value = mes;
+                option.textContent = mes;
+                monthFilter.appendChild(option);
+            });
+
+            uniqueAreas.forEach(area => {
+                const option = document.createElement('option');
+                option.value = area;
+                option.textContent = area;
+                areaFilter.appendChild(option);
+            });
+
+            monthFilter.addEventListener('change', renderFiltered);
+            areaFilter.addEventListener('change', renderFiltered);
+
+            renderFiltered();
+        }
+
+        function renderFiltered() {
+            const selectedMonth = monthFilter.value;
+            const selectedArea = areaFilter.value;
+
+            const filtered = scheduleData.filter(item => {
+                const matchMonth = selectedMonth === 'all' || item.mes === selectedMonth;
+                const matchArea = selectedArea === 'all' || item.area === selectedArea;
+                return matchMonth && matchArea;
+            });
+
+            grid.innerHTML = '';
+            
+            if (filtered.length === 0) {
+                grid.classList.add('hidden');
+                noResults.classList.remove('hidden');
+            } else {
+                grid.classList.remove('hidden');
+                noResults.classList.add('hidden');
+                
+                filtered.forEach(item => {
+                    const style = getStyleForArea(item.area);
+                    const isFestivo = item.area.toLowerCase().includes('festivo');
+                    
+                    let badgeHtml = '';
+                    let borderShadowClass = 'border-slate-200 hover:shadow-lg';
+                    
+                    // Asignar resaltado según fecha
+                    if (item.esHoy) {
+                        badgeHtml = `<div class="absolute top-0 right-0 bg-rose-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-xl shadow-sm z-10 flex items-center gap-1 animate-pulse"><i class="fas fa-star"></i> ¡HOY!</div>`;
+                        borderShadowClass = 'border-rose-400 ring-2 ring-rose-400 shadow-md shadow-rose-100';
+                    } else if (item.esProxima) {
+                        badgeHtml = `<div class="absolute top-0 right-0 bg-indigo-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-xl shadow-sm z-10 flex items-center gap-1"><i class="fas fa-arrow-right"></i> PRÓXIMA</div>`;
+                        borderShadowClass = 'border-indigo-400 ring-2 ring-indigo-400 shadow-md shadow-indigo-100';
+                    }
+                    
+                    const card = document.createElement('div');
+                    card.className = `bg-white rounded-xl shadow-sm border ${borderShadowClass} relative overflow-hidden transition-all duration-300 transform hover:-translate-y-1 flex flex-col h-full`;
+                    
+                    card.innerHTML = `
+                        ${badgeHtml}
+                        <div class="px-5 py-3 ${style.color} border-b flex items-center justify-between">
+                            <span class="font-bold text-xs uppercase tracking-wider">${item.area}</span>
+                            <i class="${style.icon} text-xl"></i>
+                        </div>
+                        <div class="p-6 flex-grow flex flex-col justify-center">
+                            <div class="flex items-center text-slate-500 text-sm mb-2 font-medium">
+                                <i class="far fa-calendar-alt w-5"></i> 
+                                ${item.dia}, ${formatDateNice(item.fecha_estandar)}
+                            </div>
+                            <div class="flex items-center text-slate-500 text-sm mb-4 font-medium">
+                                <i class="far fa-clock w-5"></i> 
+                                ${item.horario}
+                            </div>
+                            <h3 class="text-lg font-bold ${isFestivo ? 'text-slate-500 line-through' : 'text-slate-800'} leading-tight mt-auto">
+                                ${item.tema}
+                            </h3>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            }
+
+            // Actualizar contador
+            resultsCount.innerHTML = `<i class="fas fa-check-circle mr-1"></i> ${filtered.length} clase${filtered.length !== 1 ? 's' : ''}`;
+        }
+
+        function resetFilters() {
+            monthFilter.value = 'all';
+            areaFilter.value = 'all';
+            renderFiltered();
+        }
+
+        // Iniciar la aplicación cuando cargue la página
+        document.addEventListener('DOMContentLoaded', loadDataAndInit);
+    </script>
+</body>
+</html>
