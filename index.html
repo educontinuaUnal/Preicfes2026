@@ -82,18 +82,18 @@
         const csvData = `Fecha;Día;Horario;Área;Tema / Evento
 23-feb;Lunes;5:00 p.m. a 7:00 p.m.;Biología;Método Científico y Célula
 24-feb;Martes;5:00 p.m. a 7:00 p.m.;Biología;Procesos Celulares (Respiración, Fotosíntesis)
-25-feb;Miércoles;5:00 p.m. a 7:00 p.m.;Biología;Genética I (Leyes de Mendel)
-26-feb;Jueves;5:00 p.m. a 7:00 p.m.;Biología;Genética II (ADN y ARN)
-28-feb;Sábado;8:00 a.m. a 10:00 a.m.;Biología;Organismos y Clasificación
+25-feb;Miércoles;5:00 p.m. a 7:00 p.m.;CANCELADO;Clase Cancelada
+26-feb;Jueves;5:00 p.m. a 7:00 p.m.;Biología;Genética I (Leyes de Mendel)
+28-feb;Sábado;8:00 a.m. a 10:00 a.m.;Biología;Genética II (ADN y ARN)
 2-mar;Lunes;5:00 p.m. a 7:00 p.m.;Sociales;Historia y Geografía base
 3-mar;Martes;5:00 p.m. a 7:00 p.m.;Sociales;Geografía Económica
 4-mar;Miércoles;5:00 p.m. a 7:00 p.m.;Sociales;Historia Universal y Latinoamericana
 5-mar;Jueves;5:00 p.m. a 7:00 p.m.;Sociales;Constitución Política de 1991
 7-mar;Sábado;8:00 a.m. a 10:00 a.m.;SIMULACRO;📌 PRIMER SIMULACRO (DIAGNÓSTICO)
-9-mar;Lunes;5:00 p.m. a 7:00 p.m.;Biología;Sistemas del Cuerpo Humano I
-10-mar;Martes;5:00 p.m. a 7:00 p.m.;Biología;Sistemas del Cuerpo Humano II
-11-mar;Miércoles;5:00 p.m. a 7:00 p.m.;Biología;Ecosistemas y Poblaciones
-12-mar;Jueves;5:00 p.m. a 7:00 p.m.;Biología;Flujo de Energía en ecosistemas
+9-mar;Lunes;5:00 p.m. a 7:00 p.m.;Biología;Organismos y Clasificación
+10-mar;Martes;5:00 p.m. a 7:00 p.m.;Biología;Sistemas del Cuerpo Humano I
+11-mar;Miércoles;5:00 p.m. a 7:00 p.m.;Biología;Sistemas del Cuerpo Humano II
+12-mar;Jueves;5:00 p.m. a 7:00 p.m.;Biología;Ecosistemas y Poblaciones
 14-mar;Sábado;8:00 a.m. a 10:00 a.m.;Biología;Evolución y origen de la vida
 16-mar;Lunes;5:00 p.m. a 7:00 p.m.;Sociales;Derechos y Deberes Fundamentales
 17-mar;Martes;5:00 p.m. a 7:00 p.m.;Sociales;Mecanismos de Participación
@@ -246,6 +246,7 @@
             if (areaLower.includes('charla')) return { color: 'bg-pink-50 text-pink-700 border-pink-200', icon: 'fas fa-comments text-pink-500' };
             if (areaLower.includes('simulacro')) return { color: 'bg-orange-50 text-orange-700 border-orange-200', icon: 'fas fa-file-signature text-orange-500' };
             if (areaLower.includes('evento')) return { color: 'bg-yellow-50 text-yellow-700 border-yellow-200', icon: 'fas fa-glass-cheers text-yellow-500' };
+            if (areaLower.includes('cancelado')) return { color: 'bg-red-50 text-red-700 border-red-200', icon: 'fas fa-ban text-red-500' };
 
             return { color: 'bg-slate-50 text-slate-700 border-slate-200', icon: 'fas fa-book text-slate-400' };
         }
@@ -356,6 +357,7 @@
                 filtered.forEach(item => {
                     const style = getStyleForArea(item.area);
                     const isFestivo = item.area.toLowerCase().includes('festivo');
+                    const isCancelado = item.area.toLowerCase().includes('cancelado');
                     
                     let badgeHtml = '';
                     let borderShadowClass = 'border-slate-200 hover:shadow-lg';
@@ -387,7 +389,7 @@
                                 <i class="far fa-clock w-5"></i> 
                                 ${item.horario}
                             </div>
-                            <h3 class="text-lg font-bold ${isFestivo ? 'text-slate-500 line-through' : 'text-slate-800'} leading-tight mt-auto">
+                            <h3 class="text-lg font-bold ${isFestivo || isCancelado ? 'text-slate-500 line-through' : 'text-slate-800'} leading-tight mt-auto">
                                 ${item.tema}
                             </h3>
                         </div>
