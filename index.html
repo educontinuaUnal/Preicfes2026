@@ -76,11 +76,15 @@
     </main>
 
     <script>
+
         // =========================================================================
-        
+        const GOOGLE_SHEETS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRqGcVYnfCKAlgYksSBlCLoOxox6Msrok1eSmsEsyDe5S8zscqL0z9UUMxhhPq2Wg/pub?output=csv"; 
+
         // =========================================================================
-        const csvData = `Fecha;Día;Horario;Área;Tema / Evento
-23-feb;Lunes;5:00 p.m. a 7:00 p.m.;Biología;Método Científico y Célula
+        // Datos de respaldo (Se usarán si no has puesto el enlace de Google Sheets arriba)
+        // =========================================================================
+        const fallbackData = `Fecha;Día;Horario;Área;Tema / Evento;Enlace Grabación
+23-feb;Lunes;5:00 p.m. a 7:00 p.m.;Biología;Método Científico y Célula;https://youtube.com
 24-feb;Martes;5:00 p.m. a 7:00 p.m.;Biología;Procesos Celulares (Respiración, Fotosíntesis)
 25-feb;Miércoles;5:00 p.m. a 7:00 p.m.;CANCELADO;Clase Cancelada
 26-feb;Jueves;5:00 p.m. a 7:00 p.m.;Biología;Genética I (Leyes de Mendel)
@@ -186,18 +190,21 @@
 22-jul;Miércoles;5:00 p.m. a 7:00 p.m.;Inglés;Cierre de Módulo
 23-jul;Jueves;5:00 p.m. a 7:00 p.m.;EVENTO;🎉 CLAUSURA DEL CURSO`;
 
-        // 1. Función para procesar el CSV con separador de Punto y Coma (;)
+        // 1. Función Inteligente para procesar el CSV (Soporta comas de Google Sheets o punto y coma)
         function parseCSV(str) {
             const arr = [];
             let quote = false;
             let row = 0, col = 0;
+            // Detecta automáticamente si se usan comas o punto y coma
+            const delimiter = (str.indexOf(';') !== -1 && str.indexOf(';') < str.indexOf('\n')) ? ';' : ',';
+
             for (let c = 0; c < str.length; c++) {
                 let cc = str[c], nc = str[c+1];
                 arr[row] = arr[row] || [];
                 arr[row][col] = arr[row][col] || '';
                 if (cc == '"' && quote && nc == '"') { arr[row][col] += cc; ++c; continue; }
                 if (cc == '"') { quote = !quote; continue; }
-                if (cc == ';' && !quote) { ++col; continue; } // Separador ajustado a ;
+                if (cc == delimiter && !quote) { ++col; continue; } 
                 if (cc == '\r' && nc == '\n' && !quote) { ++row; col = 0; ++c; continue; }
                 if (cc == '\n' && !quote) { ++row; col = 0; continue; }
                 if (cc == '\r' && !quote) { ++row; col = 0; continue; }
@@ -206,7 +213,7 @@
             return arr;
         }
 
-        // 2. Utilidades de Fecha (Adaptado para formato 23-feb)
+        // 2. Utilidades de Fecha
         const monthsNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
         
         function standardizeDate(dateStr) {
@@ -215,7 +222,7 @@
                 const day = parts[0].padStart(2, '0');
                 const monthMap = { 'ene': '01', 'feb': '02', 'mar': '03', 'abr': '04', 'may': '05', 'jun': '06', 'jul': '07', 'ago': '08', 'sep': '09', 'oct': '10', 'nov': '11', 'dic': '12' };
                 const month = monthMap[parts[1]] || '01';
-                return `2026-${month}-${day}`; // Asumimos año 2026
+                return `2026-${month}-${day}`; 
             }
             return dateStr;
         }
@@ -234,6 +241,8 @@
 
         // 3. Estilos e Iconos dinámicos por Área
         function getStyleForArea(area) {
+            if (!area) return { color: 'bg-slate-50 text-slate-700 border-slate-200', icon: 'fas fa-book text-slate-400' };
+            
             const areaLower = area.toLowerCase();
             if (areaLower.includes('biología')) return { color: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: 'fas fa-leaf text-emerald-500' };
             if (areaLower.includes('sociales')) return { color: 'bg-amber-50 text-amber-700 border-amber-200', icon: 'fas fa-globe-americas text-amber-500' };
@@ -259,10 +268,28 @@
         const areaFilter = document.getElementById('areaFilter');
         const resultsCount = document.getElementById('resultsCount');
 
-        function loadDataAndInit() {
+        async function loadDataAndInit() {
             try {
-                // Procesar la variable csvData
-                const raw = parseCSV(csvData.trim());
+                grid.innerHTML = '<div class="col-span-full text-center py-10 text-slate-500"><i class="fas fa-spinner fa-spin text-3xl mb-4"></i><br>Cargando cronograma...</div>';
+                
+                let textToProcess = fallbackData;
+
+                // Si proporcionaste un enlace de Google Sheets, la página intentará descargarlo
+                if (GOOGLE_SHEETS_CSV_URL && GOOGLE_SHEETS_CSV_URL.trim() !== "") {
+                    try {
+                        const response = await fetch(GOOGLE_SHEETS_CSV_URL);
+                        if(response.ok) {
+                            textToProcess = await response.text();
+                        } else {
+                            console.warn("No se pudo cargar Google Sheets, usando datos de respaldo.");
+                        }
+                    } catch (fetchError) {
+                        console.warn("Error de conexión a Google Sheets, usando datos de respaldo.", fetchError);
+                    }
+                }
+
+                // Procesar los datos (ya sean de Google Sheets o el respaldo)
+                const raw = parseCSV(textToProcess.trim());
                 
                 scheduleData = raw.slice(1) // Ignorar encabezado
                     .filter(row => row.length >= 5 && row[0] && row[0].trim() !== '') // Evitar filas vacías
@@ -273,10 +300,11 @@
                             fecha_original: originalDate,
                             fecha_estandar: standardDate,
                             mes: getMonthName(standardDate),
-                            dia: row[1].trim(),
-                            horario: row[2].trim(),
-                            area: row[3].trim(),
-                            tema: row[4].trim()
+                            dia: row[1] ? row[1].trim() : '',
+                            horario: row[2] ? row[2].trim() : '',
+                            area: row[3] ? row[3].trim() : '',
+                            tema: row[4] ? row[4].trim() : '',
+                            enlace: row[5] ? row[5].trim() : ''
                         };
                     });
 
@@ -302,8 +330,8 @@
 
                 initFilters();
             } catch (e) {
-                console.error("Error al cargar los datos", e);
-                grid.innerHTML = `<div class="col-span-full text-center py-10 text-red-500 bg-red-50 rounded-xl border border-red-200"><i class="fas fa-exclamation-triangle text-3xl mb-4"></i><br><span class="font-semibold">Error procesando los datos. Asegúrate de pegarlos correctamente.</span></div>`;
+                console.error("Error general", e);
+                grid.innerHTML = `<div class="col-span-full text-center py-10 text-red-500 bg-red-50 rounded-xl border border-red-200"><i class="fas fa-exclamation-triangle text-3xl mb-4"></i><br><span class="font-semibold">Error al cargar la información.</span></div>`;
             }
         }
 
@@ -392,6 +420,13 @@
                             <h3 class="text-lg font-bold ${isFestivo || isCancelado ? 'text-slate-500 line-through' : 'text-slate-800'} leading-tight mt-auto">
                                 ${item.tema}
                             </h3>
+                            ${item.enlace ? `
+                            <div class="mt-4 pt-4 border-t border-slate-100">
+                                <a href="${item.enlace}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center w-full bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 font-semibold py-2 px-4 rounded-lg transition-all duration-300 text-sm group">
+                                    <i class="fas fa-play-circle mr-2 text-indigo-500 group-hover:text-white transition-colors"></i> Ver Grabación
+                                </a>
+                            </div>
+                            ` : ''}
                         </div>
                     `;
                     grid.appendChild(card);
